@@ -23,17 +23,24 @@ export function App() {
 
   const loadAllTransactions = useCallback(async () => {
     setIsLoading(true)
-    transactionsByEmployeeUtils.invalidateData()
 
-    await employeeUtils.fetchAll()
+    try {
+      await employeeUtils.fetchAll()
 
-    if (selectedEmployeeId) {
-      await transactionsByEmployeeUtils.fetchById(selectedEmployeeId)
-    } else {
+      if (selectedEmployeeId) {
+        await transactionsByEmployeeUtils.fetchById(selectedEmployeeId)
+      } else {
+        await paginatedTransactionsUtils.fetchAll()
+      }
+    } catch (error) {
+      console.error("Error loading all transactions:", error)
+      // if error go to safe state
+      transactionsByEmployeeUtils.invalidateData()
+      paginatedTransactionsUtils.invalidateData()
       await paginatedTransactionsUtils.fetchAll()
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils, selectedEmployeeId])
 
   const loadTransactionsByEmployee = useCallback(
@@ -41,21 +48,39 @@ export function App() {
       setSelectedEmployeeId(employeeId)
       paginatedTransactionsUtils.invalidateData()
 
-      if (employeeId === EMPTY_EMPLOYEE.id) {
+      try {
+        if (employeeId === EMPTY_EMPLOYEE.id) {
+          // all
+          setSelectedEmployeeId("")
+          transactionsByEmployeeUtils.invalidateData()
+          await paginatedTransactionsUtils.fetchAll()
+        } else {
+          await transactionsByEmployeeUtils.fetchById(employeeId)
+        }
+      } catch (error) {
+        console.error("Error loading transactions:", error)
+        // if error go to safe state
         setSelectedEmployeeId("")
+        paginatedTransactionsUtils.invalidateData()
+        transactionsByEmployeeUtils.invalidateData()
         await paginatedTransactionsUtils.fetchAll()
-      } else {
-        await transactionsByEmployeeUtils.fetchById(employeeId)
       }
     },
     [paginatedTransactionsUtils, transactionsByEmployeeUtils]
   )
 
   const refreshTransactions = useCallback(async () => {
-    if (selectedEmployeeId) {
-      await transactionsByEmployeeUtils.fetchById(selectedEmployeeId)
-    } else {
+    try {
+      if (selectedEmployeeId) {
+        await transactionsByEmployeeUtils.fetchById(selectedEmployeeId)
+      } else {
+        paginatedTransactionsUtils.invalidateData()
+        await paginatedTransactionsUtils.fetchAll()
+      }
+    } catch (error) {
+      console.error("Error refreshing transactions:", error)
       paginatedTransactionsUtils.invalidateData()
+      transactionsByEmployeeUtils.invalidateData()
       await paginatedTransactionsUtils.fetchAll()
     }
   }, [selectedEmployeeId, transactionsByEmployeeUtils, paginatedTransactionsUtils])
