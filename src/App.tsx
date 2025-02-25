@@ -25,7 +25,9 @@ export function App() {
     setIsLoading(true)
 
     try {
-      await employeeUtils.fetchAll()
+      if (employees === null) {
+        await employeeUtils.fetchAll()
+      }
 
       if (selectedEmployeeId) {
         await transactionsByEmployeeUtils.fetchById(selectedEmployeeId)
@@ -72,13 +74,16 @@ export function App() {
   const refreshTransactions = useCallback(async () => {
     try {
       if (selectedEmployeeId) {
+        // refresh only that person
         await transactionsByEmployeeUtils.fetchById(selectedEmployeeId)
       } else {
+        // refresh all
         paginatedTransactionsUtils.invalidateData()
         await paginatedTransactionsUtils.fetchAll()
       }
     } catch (error) {
       console.error("Error refreshing transactions:", error)
+      // if error go to safe state
       paginatedTransactionsUtils.invalidateData()
       transactionsByEmployeeUtils.invalidateData()
       await paginatedTransactionsUtils.fetchAll()
