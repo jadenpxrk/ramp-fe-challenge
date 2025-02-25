@@ -22,6 +22,14 @@ export function App() {
   )
 
   const loadAllTransactions = useCallback(async () => {
+    if (isLoading) {
+      return
+    }
+
+    if (paginatedTransactions?.nextPage === null) {
+      return
+    }
+
     setIsLoading(true)
 
     try {
@@ -29,66 +37,85 @@ export function App() {
         await employeeUtils.fetchAll()
       }
 
-      if (selectedEmployeeId) {
-        await transactionsByEmployeeUtils.fetchById(selectedEmployeeId)
-      } else {
+      if (!selectedEmployeeId) {
         await paginatedTransactionsUtils.fetchAll()
+      } else {
+        await transactionsByEmployeeUtils.fetchById(selectedEmployeeId)
       }
     } catch (error) {
       console.error("Error loading all transactions:", error)
-      // if error go to safe state
       transactionsByEmployeeUtils.invalidateData()
       paginatedTransactionsUtils.invalidateData()
       await paginatedTransactionsUtils.fetchAll()
     } finally {
       setIsLoading(false)
     }
-  }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils, selectedEmployeeId])
+  }, [
+    isLoading,
+    paginatedTransactions,
+    employees,
+    selectedEmployeeId,
+    employeeUtils,
+    paginatedTransactionsUtils,
+    transactionsByEmployeeUtils,
+  ])
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
-      setSelectedEmployeeId(employeeId)
-      paginatedTransactionsUtils.invalidateData()
+      if (isLoading) {
+        return
+      }
+
+      setIsLoading(true)
 
       try {
+        setSelectedEmployeeId(employeeId)
+
         if (employeeId === EMPTY_EMPLOYEE.id) {
-          // all
           setSelectedEmployeeId("")
           transactionsByEmployeeUtils.invalidateData()
+          paginatedTransactionsUtils.invalidateData()
           await paginatedTransactionsUtils.fetchAll()
         } else {
+          paginatedTransactionsUtils.invalidateData()
           await transactionsByEmployeeUtils.fetchById(employeeId)
         }
       } catch (error) {
         console.error("Error loading transactions:", error)
-        // if error go to safe state
         setSelectedEmployeeId("")
         paginatedTransactionsUtils.invalidateData()
         transactionsByEmployeeUtils.invalidateData()
         await paginatedTransactionsUtils.fetchAll()
+      } finally {
+        setIsLoading(false)
       }
     },
-    [paginatedTransactionsUtils, transactionsByEmployeeUtils]
+    [isLoading, paginatedTransactionsUtils, transactionsByEmployeeUtils]
   )
 
   const refreshTransactions = useCallback(async () => {
+    if (isLoading) {
+      return
+    }
+
+    setIsLoading(true)
+
     try {
       if (selectedEmployeeId) {
-        // refresh only that person
         await transactionsByEmployeeUtils.fetchById(selectedEmployeeId)
       } else {
-        // refresh all
         paginatedTransactionsUtils.invalidateData()
         await paginatedTransactionsUtils.fetchAll()
       }
     } catch (error) {
       console.error("Error refreshing transactions:", error)
-      // if error go to safe state
       paginatedTransactionsUtils.invalidateData()
       transactionsByEmployeeUtils.invalidateData()
       await paginatedTransactionsUtils.fetchAll()
+    } finally {
+      setIsLoading(false)
     }
-  }, [selectedEmployeeId, transactionsByEmployeeUtils, paginatedTransactionsUtils])
+  }, [isLoading, selectedEmployeeId, transactionsByEmployeeUtils, paginatedTransactionsUtils])
 
   useEffect(() => {
     if (employees === null && !employeeUtils.loading) {
@@ -127,19 +154,17 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={transactions} onTransactionApprovalChange={refreshTransactions} />
 
-          {transactions !== null &&
-            ((paginatedTransactions?.nextPage !== null && !selectedEmployeeId) ||
-              selectedEmployeeId === "") && (
-              <button
-                className="RampButton"
-                disabled={paginatedTransactionsUtils.loading}
-                onClick={async () => {
-                  await loadAllTransactions()
-                }}
-              >
-                View More
-              </button>
-            )}
+          {transactions !== null && !selectedEmployeeId && paginatedTransactions?.nextPage !== null && (
+            <button
+              className="RampButton"
+              disabled={paginatedTransactionsUtils.loading}
+              onClick={async () => {
+                await loadAllTransactions()
+              }}
+            >
+              View More
+            </button>
+          )}
         </div>
       </main>
     </Fragment>
