@@ -53,10 +53,8 @@ export function App() {
 
   const refreshTransactions = useCallback(async () => {
     if (selectedEmployeeId) {
-      // If an employee is selected, refresh only that employee's transactions
       await transactionsByEmployeeUtils.fetchById(selectedEmployeeId)
     } else {
-      // Otherwise, invalidate the paginated transactions and fetch the first page again
       paginatedTransactionsUtils.invalidateData()
       await paginatedTransactionsUtils.fetchAll()
     }

@@ -13,7 +13,7 @@ export function useTransactionsByEmployee(): TransactionsByEmployeeResult {
     async (employeeId: string) => {
       setCurrentEmployeeId(employeeId)
 
-      // Reset transactions when switching employees
+      // reset after switchin
       if (currentEmployeeId !== employeeId) {
         setTransactionsByEmployee(null)
       }
@@ -30,9 +30,9 @@ export function useTransactionsByEmployee(): TransactionsByEmployeeResult {
           return data
         }
 
-        // If we're fetching for the same employee, we might want to append
-        // But the current API doesn't support pagination for employee transactions
-        // So we'll just return the new data
+        // if fetching for the same guy, we might want to append
+        // but current fake API dont support pagination for employee transactions
+        // So returning just new data
         return data
       })
     },

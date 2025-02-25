@@ -15,7 +15,6 @@ export const Transactions: TransactionsComponent = ({ transactions, onTransactio
         value: newValue,
       })
 
-      // Call the callback to refresh transactions after approval change
       if (onTransactionApprovalChange) {
         await onTransactionApprovalChange()
       }
